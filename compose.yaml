@@ -1,0 +1,63 @@
+name: deployment
+
+services:
+  postgres:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-deployment}"
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-postgres}"
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - deployment-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-deployment}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  deployment:
+    build:
+      context: .
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 4100
+      DATABASE_URL: "${DEPLOYMENT_DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/deployment}"
+      TRUST_PROXY: "${TRUST_PROXY:-false}"
+      APP_VERSION: "${APP_VERSION:-0.1.0}"
+      BUILD_SHA: "${BUILD_SHA:-development}"
+    ports:
+      - "127.0.0.1:${DEPLOYMENT_PORT:-4100}:4100"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4100/health/ready').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1));",
+        ]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 6
+
+volumes:
+  deployment-postgres:
