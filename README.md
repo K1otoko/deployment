@@ -20,7 +20,8 @@ cp .env.example .env
 pnpm dev
 ```
 
-默认监听 `http://127.0.0.1:4100`。服务启动不依赖立即建立数据库连接；
+默认监听 `http://127.0.0.1:4100`，接口统一使用 `/api` 前缀。
+服务启动不依赖立即建立数据库连接；
 就绪检查会真实验证 PostgreSQL 连通性。
 
 ## Docker Compose
@@ -35,10 +36,10 @@ docker compose up --build
 
 | 路径 | 说明 |
 | --- | --- |
-| `GET /` | 服务名称与版本 |
-| `GET /health` | 进程存活检查 |
-| `GET /health/ready` | PostgreSQL 就绪检查 |
-| `GET /version` | 版本与构建标识 |
+| `GET /api` | 服务名称与版本 |
+| `GET /api/health` | 进程存活检查 |
+| `GET /api/health/ready` | PostgreSQL 就绪检查 |
+| `GET /api/version` | 版本与构建标识 |
 | 其他路径 | 统一返回 404 |
 
 ## 常用命令

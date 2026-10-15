@@ -18,7 +18,7 @@ describe('deployment service', () => {
       checkDatabase: vi.fn().mockResolvedValue(undefined),
     });
 
-    const response = await request(app).get('/').expect(200);
+    const response = await request(app).get('/api').expect(200);
 
     expect(response.body).toEqual({
       name: 'deployment-server',
@@ -31,7 +31,7 @@ describe('deployment service', () => {
     const checkDatabase = vi.fn().mockRejectedValue(new Error('unavailable'));
     const app = createApp({ config, checkDatabase });
 
-    await request(app).get('/health').expect(200, {
+    await request(app).get('/api/health').expect(200, {
       status: 'ok',
       service: 'deployment-server',
     });
@@ -42,7 +42,7 @@ describe('deployment service', () => {
     const checkDatabase = vi.fn().mockResolvedValue(undefined);
     const app = createApp({ config, checkDatabase });
 
-    await request(app).get('/health/ready').expect(200, {
+    await request(app).get('/api/health/ready').expect(200, {
       status: 'ready',
       service: 'deployment-server',
     });
@@ -56,7 +56,7 @@ describe('deployment service', () => {
       checkDatabase: vi.fn().mockRejectedValue(new Error('unavailable')),
     });
 
-    await request(app).get('/health/ready').expect(503, {
+    await request(app).get('/api/health/ready').expect(503, {
       status: 'unavailable',
       service: 'deployment-server',
     });
@@ -69,7 +69,7 @@ describe('deployment service', () => {
       checkDatabase: vi.fn().mockResolvedValue(undefined),
     });
 
-    await request(app).get('/version').expect(200, {
+    await request(app).get('/api/version').expect(200, {
       version: '0.1.0-test',
       buildSha: 'test-sha',
     });
@@ -81,7 +81,18 @@ describe('deployment service', () => {
       checkDatabase: vi.fn().mockResolvedValue(undefined),
     });
 
-    await request(app).get('/missing').expect(404, {
+    await request(app).get('/api/missing').expect(404, {
+      error: 'not_found',
+    });
+  });
+
+  it('does not expose legacy unversioned routes', async () => {
+    const app = createApp({
+      config,
+      checkDatabase: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await request(app).get('/health').expect(404, {
       error: 'not_found',
     });
   });

@@ -27,6 +27,7 @@ export function createApp({
   checkDatabase,
 }: AppDependencies): Express {
   const app = express();
+  const api = express.Router();
 
   app.disable('x-powered-by');
   app.set('trust proxy', config.trustProxy);
@@ -37,21 +38,21 @@ export function createApp({
   });
   app.use(express.json({ limit: '100kb' }));
 
-  app.get('/', (_request, response) => {
+  api.get('/', (_request, response) => {
     response.json({
       name: 'deployment-server',
       version: config.appVersion,
     });
   });
 
-  app.get('/health', (_request, response) => {
+  api.get('/health', (_request, response) => {
     response.json({
       status: 'ok',
       service: 'deployment-server',
     });
   });
 
-  app.get('/health/ready', async (_request, response) => {
+  api.get('/health/ready', async (_request, response) => {
     try {
       await checkDatabase();
       response.json({
@@ -67,12 +68,14 @@ export function createApp({
     }
   });
 
-  app.get('/version', (_request, response) => {
+  api.get('/version', (_request, response) => {
     response.json({
       version: config.appVersion,
       buildSha: config.buildSha,
     });
   });
+
+  app.use('/api', api);
 
   app.use((_request, response) => {
     response.status(404).json({ error: 'not_found' });
